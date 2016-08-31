@@ -7,3 +7,8 @@ venv :
 .PHONY : dev
 dev : venv
 	@$(VENV_PATH)/bin/pip install -r requirements.txt
+
+.PHONY : notebook
+notebook : venv
+	@$(VENV_PATH)/bin/pip install jupyter
+	@$(VENV_PATH)/bin/jupyter-notebook
