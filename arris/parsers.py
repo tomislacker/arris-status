@@ -76,6 +76,21 @@ class Status(Parser):
 class Hardware(Parser):
     uri = '/cgi-bin/vers_cgi'
 
+    @classmethod
+    def parse(cls, contents):
+        tree = html.fromstring(contents)
+        data = {}
+        for row in tree.xpath('//tr'):
+            cols = row.xpath('td')
+            if len(cols) != 2:
+                continue
+
+            data.update({
+                cls.sanitize_name(cols[0].text): cols[1].text_content(),
+            })
+
+        return data
+
 
 class Events(Parser):
     uri = '/cgi-bin/event_cgi'
