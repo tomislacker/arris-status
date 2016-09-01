@@ -13,9 +13,64 @@ class Parser(object):
 
 class Status(Parser):
     uri = '/cgi-bin/status_cgi'
-    fields = {
-        'uptime': '/html/body/div[1]/div[3]/table[6]/tbody/tr[1]/td[2]',
-    }
+
+    @classmethod
+    def parse(cls, contents):
+        tree = html.fromstring(contents)
+        data = {}
+
+        # Downstream channels
+        dchans = []
+        dchan_rows = tree.xpath('/html/body/div[1]/div[3]/table[2]//tr')
+        headers = [cls.sanitize_name(td.text) for td in dchan_rows[0].xpath('td')[1:]]
+
+        for row in dchan_rows[1:]:
+            dchan = {}
+            for col_idx, td in enumerate(row.xpath('td')[1:]):
+                dchan.update({
+                    headers[col_idx]: td.text,
+                })
+            dchans.append(dchan)
+        data.update({'downstream': dchans})
+
+        # Upstream channels
+        uchans = []
+        uchan_rows = tree.xpath('/html/body/div[1]/div[3]/table[4]//tr')
+        headers = [cls.sanitize_name(td.text) for td in uchan_rows[0].xpath('td')[1:]]
+
+        for row in uchan_rows[1:]:
+            uchan = {}
+            for col_idx, td in enumerate(row.xpath('td')[1:]):
+                uchan.update({
+                    headers[col_idx]: td.text,
+                })
+            uchans.append(uchan)
+        data.update({'upstream': uchans})
+
+        # System status
+        sys_stat = {}
+        for row in tree.xpath('/html/body/div[1]/div[3]/table[6]//tr'):
+            cols = row.xpath('td')
+            sys_stat.update({
+                cls.sanitize_name(cols[0].text): cols[1].text.strip(),
+            })
+        data.update({'system': sys_stat})
+
+        # Interface parameters
+        ifaces = []
+        ifaces_rows = tree.xpath('/html/body/div[1]/div[3]/table[8]//tr')
+        headers = [cls.sanitize_name(td.text) for td in ifaces_rows[0].xpath('td')]
+
+        for row in ifaces_rows[1:]:
+            iface = {}
+            for col_idx, td in enumerate(row.xpath('td')):
+                iface.update({
+                    headers[col_idx]: td.text,
+                })
+            ifaces.append(iface)
+        data.update({'ifaces': ifaces})
+
+        return data
 
 
 class Hardware(Parser):
