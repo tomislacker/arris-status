@@ -95,6 +95,41 @@ class Hardware(Parser):
 class Events(Parser):
     uri = '/cgi-bin/event_cgi'
 
+    @classmethod
+    def parse(cls, contents):
+        tree = html.fromstring(contents)
+        data = {}
+
+        # DOCSIS(CM) Events
+        docsis_events = []
+        docsis_rows = tree.xpath('/html/body/div[1]/div[3]/table[2]//tr')
+        headers = [cls.sanitize_name(td.text_content()) for td in docsis_rows[0].xpath('td')]
+
+        for row in docsis_rows[1:]:
+            event = {}
+            for col_idx, td in enumerate(row.xpath('td')):
+                event.update({
+                    headers[col_idx]: td.text_content(),
+                })
+            docsis_events.append(event)
+        data.update({'docsis_events': docsis_events})
+
+        # PacketCable(MTA) Events
+        pc_events = []
+        pc_rows = tree.xpath('/html/body/div[1]/div[3]/table[4]//tr')
+        headers = [cls.sanitize_name(td.text_content()) for td in pc_rows[0].xpath('td')]
+
+        for row in pc_rows[1:]:
+            event = {}
+            for col_idx, td in enumerate(row.xpath('td')):
+                event.update({
+                    headers[col_idx]: td.text_content(),
+                })
+            pc_events.append(event)
+        data.update({'packetcable_events': pc_events})
+
+        return data
+
 class State(Parser):
     uri = '/cgi-bin/cm_state_cgi'
 
